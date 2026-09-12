@@ -142,3 +142,39 @@ Seed at least these 15 products:
 13. SSE emits progress and paused state; resume continues correctly after a full backend restart.
 14. Prompt-injection (including a document containing an embedded instruction) and forged-user-id tests cannot bypass server checks.
 
+## Run
+
+### Backend (Terminal 1)
+
+**Windows:**
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\pip install -r requirements-minimal.txt
+# or the full set: requirements.txt (needs extra space/time for sentence-transformers)
+alembic upgrade head
+.venv\Scripts\python seed.py
+.venv\Scripts\uvicorn app.main:app --reload --port 8000
+```
+
+
+### Frontend (Terminal 2)
+
+```bash
+cd frontend
+npm install
+npm run check:backend    # should print OK once the backend is up
+npm run dev              # http://localhost:5173 → login → chat
+```
+
+### Environment variables
+
+Copy `backend/.env.example` to `backend/.env` and set `GROQ_API_KEY` before using
+chat or any agent-driven feature. Authentication, inventory lookup, and the admin
+list views work without an LLM key configured — only the supervisor/knowledge/action
+graph requires it.
+
+### Demo login
+
+Use any of the seeded accounts (see [Seed data](#seed-data)) with the shared password
+`DemoPass123!` at `http://localhost:5173`.

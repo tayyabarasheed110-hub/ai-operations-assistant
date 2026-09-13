@@ -1,7 +1,10 @@
 import hashlib
+import logging
 import os
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
@@ -27,11 +30,18 @@ def _get_embedder() -> Any:
         if os.getenv("EMBEDDING_MODE") == "test":
             _embedder = "test"
         else:
-            from sentence_transformers import SentenceTransformer
+            try:
+                from sentence_transformers import SentenceTransformer
 
-            # Token only needed for gated HF models; local model ignores it.
-            _embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-            _ = settings.huggingfacehub_api_token
+                # Token only needed for gated HF models; local model ignores it.
+                _embedder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+                _ = settings.huggingfacehub_api_token
+            except ImportError:
+                logger.warning(
+                    "sentence-transformers not installed; using deterministic test embeddings. "
+                    "Install full requirements.txt for production-quality retrieval."
+                )
+                _embedder = "test"
     return _embedder
 
 

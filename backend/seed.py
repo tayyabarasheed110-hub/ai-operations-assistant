@@ -7,6 +7,7 @@ from app.capabilities import ALL_CAPABILITIES, EMAIL_SEND, INVENTORY_READ, ORDER
 from app.db.session import SessionLocal, init_db
 from app.models.product import Product
 from app.models.user import User, UserCapability
+from app.services.policy_sync import sync_policy_docs_from_disk
 
 DEMO_PASSWORD = "DemoPass123!"
 
@@ -71,6 +72,11 @@ def seed() -> None:
                         supplier=supplier,
                     )
                 )
+        admin = db.query(User).filter(User.email == "admin@assistant.test").first()
+        if admin:
+            indexed = sync_policy_docs_from_disk(db, uploaded_by=admin.id)
+            if indexed:
+                print("Indexed policy files:", ", ".join(indexed))
         db.commit()
         print("Seed complete.")
     finally:

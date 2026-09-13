@@ -6,6 +6,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 from sqlalchemy.orm import Session
 
+import atexit
+
 from app.agent.prompts import (
     ACTION_PLAN_PROMPT,
     KNOWLEDGE_ANSWER_PROMPT,
@@ -286,16 +288,20 @@ def build_graph(checkpointer: SqliteSaver):
 
 _checkpointer: SqliteSaver | None = None
 _compiled = None
+_checkpointer_cm = None
 
 
 def get_compiled_graph():
-    global _checkpointer, _compiled
+    global _checkpointer_cm, _checkpointer, _compiled
     if _compiled is None:
         settings = get_settings()
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         cp_path = settings.data_dir / "checkpoints.sqlite"
-        _checkpointer = SqliteSaver.from_conn_string(str(cp_path))
-        _checkpointer.setup()
+
+        _checkpointer_cm = SqliteSaver.from_conn_string(str(cp_path))
+        _checkpointer = _checkpointer_cm.__enter__()  # actually enter the context manager
+        atexit.register(lambda: _checkpointer_cm.__exit__(None, None, None))
+
         _compiled = build_graph(_checkpointer)
     return _compiled
 
